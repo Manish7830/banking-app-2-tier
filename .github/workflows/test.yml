@@ -1,8 +1,8 @@
 name : Test Workflow
 
-on:
+on: 
   push:
-    baranches:
+    branches:
       - main
 
 permissions:
@@ -19,14 +19,14 @@ jobs:
           role-to-assume: arn:aws:iam::875285643684:role/github-action-deploy-role
           aws-region: us-east-1
 
-      - name: Print private IPs
+      - name: Print Private IPs
         run: |
           CMD_ID=$(aws ssm send-command \
             --targets "Key=tag:App,Values=flask" \
             --document-name "AWS-RunShellScript" \
             --parameters '{"commands":["hostname -I"]}' \
-            --query 'Command.CommandId' \
-            --output text)
+            --query 'Command.CommandId' --output text
+          )
 
           sleep 30
 
