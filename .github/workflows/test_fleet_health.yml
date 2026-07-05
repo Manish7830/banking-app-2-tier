@@ -42,7 +42,7 @@ jobs:
           aws ssm list-command-invocations \
             --command-id "${{steps.health.outputs.cmd_id}}" --details \
             --region us-east-1 \
-            --query "CommandInvocations[*].{InstanceId,Status,CommandPlugins[0].Output}" \
+            --query "CommandInvocations[*].{InstanceId:InstanceId,Status:Status,Output:CommandPlugins[0].Output}" \
             --output text
 
           FAILED=$(aws ssm list-command-invocations \
