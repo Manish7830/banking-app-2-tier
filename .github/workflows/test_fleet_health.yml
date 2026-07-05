@@ -17,7 +17,8 @@ jobs:
           role-to-assume: arn:aws:iam::875285643684:role/github-action-deploy-role
           aws-region: us-east-1
 
-      - name: Fleet Health Cheaks
+      # 
+      - name: Fleet Health Checks
         id: health
         run: |
           CMD_ID=$(aws ssm send-command \
@@ -25,26 +26,25 @@ jobs:
             --document-name "AWS-RunShellScript" \
             --parameters '{"commands":[
               "hostname -I",
-              "docker --version 2>/dev/null || echo DOCKER NOT INSTALLED",
+              "docker --version 2>/dev/null ||  echo DOCKER NOT INSTALLED",
               "aws --version 2>/dev/null || echo AWS CLI NOT INSTALLED",
-              "mysql --version 2>/dev/null || echo MYSQL NOT INSTALLED",
-              "aws ssm get-parameters-by-path --path /application/banking --with-decryption --region us-east-1 --query Parameters[*].[Name,Value] --output text"
+              "mysql --version 2>/dev/null || echo DOCKER NOT INSTALLED",
+              "aws ssm get-parameters-by-path --path /application/banking --with-decryption --region ap-south-1"
               ]}' \
-            --query 'Command.CommandId' --output text\
+            --query 'Command.CommandId' --output text \
             --region us-east-1)
-          
           echo "cmd_id=$CMD_ID" >> $GITHUB_OUTPUT
-
-
+      
+      
       - name: Show Results
-        run: |
+        run: |   
           sleep 20
           aws ssm list-command-invocations \
             --command-id "${{steps.health.outputs.cmd_id}}" --details \
             --region us-east-1 \
-            --query "CommandInvocations[*].{InstanceId:InstanceId,Status:Status,Output:CommandPlugins[0].Output}" \
+            --query "CommandInvocations[*].[InstanceId,Status,CommandPlugins[0].Output]" \
             --output text
-
+          
           FAILED=$(aws ssm list-command-invocations \
             --command-id "${{steps.health.outputs.cmd_id}}" --details \
             --query "length(CommandInvocations[?Status=='Failed'])" \
