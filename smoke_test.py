@@ -5,7 +5,7 @@ import pymysql
 params={
     os.path.basename(p["Name"]):p["Value"]
     for p in client.get_parameters_by_path(
-        Path="application/banking",
+        Path="/banking",
         WithDecryption=True)["Parameters"]
 }
 
