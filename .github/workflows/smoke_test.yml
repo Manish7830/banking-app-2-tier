@@ -23,19 +23,25 @@ jobs:
 
       - name: Upload smoke_test.py to S3
         run: |
+          aws s3 mb s3://8752856436841-devops-scripts --region us-east-1 2>/dev/null || true
+          aws s3 cp smoke_test.py s3://8752856436841-devops-scripts/smoke_test.py --region us-east-1
+
+      - name: Run Smoke Test on Fleet
+        id: smoke
+        run: |
           aws s3 mb s3://875285643684-devops-scripts --region us-east-1 2>/dev/null || true
           aws s3 cp smoke_test.py s3://875285643684-devops-scripts/smoke_test.py --region us-east-1
 
       - name: Run Smoke Test on Fleet
         id: smoke
-         run: |
+        run: |
           CMD_ID=$(aws ssm send-command \
             --targets "Key=tag:App,Values=flask" \
             --document-name "AWS-RunShellScript" \
             --parameters '{"commands":[
               "aws s3 cp s3://875285643684-devops-scripts/smoke_test.py /tmp/smoke_test.py",
               "pip3 install pymysql -q 2>/dev/null",
-              "python3 /tmp/smoke_test.py",
+              "python3 /tmp/smoke_test.py || exit 1",
               "rm /tmp/smoke_test.py"
             ]}' \
             --query 'Command.CommandId' \

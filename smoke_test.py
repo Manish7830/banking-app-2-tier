@@ -3,7 +3,7 @@ client=boto3.client("ssm",region_name="us-east-1")
 import pymysql
 
 params={
-    os.path.basename(p["Name"],p["Value"])
+    os.path.basename(p["Name"]):p["Value"]
     for p in client.get_parameters_by_path(
         Path="application/banking",
         WithDecryption=True)["Parameters"]
