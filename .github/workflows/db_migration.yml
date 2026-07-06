@@ -24,8 +24,8 @@ jobs:
       - name: Upload file on S3
         run: |
           aws s3 mb s3://875285643684-devops-scripts --region us-east-1 2>/dev/null || true
-          aws s3 cp init.sql s3://875285643684-devops-scripts/init.sql 
-          aws s3 cp init.py s3://875285643684-devops-scripts/init.py 
+          aws s3 cp init.sql s3://875285643684-devops-scripts/init.sql --region us-east-1
+          aws s3 cp init.py s3://875285643684-devops-scripts/init.py --region us-east-1
           echo "✅ Files Uploaded to bucket.."
 
       - name: Initializing Database on RDS using Ec2
