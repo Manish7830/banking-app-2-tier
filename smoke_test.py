@@ -5,7 +5,7 @@ import pymysql
 params={
     os.path.basename(p["Name"]):p["Value"]
     for p in client.get_parameters_by_path(
-        Path="/banking",
+        Path="/application/banking/",
         WithDecryption=True)["Parameters"]
 }
 
@@ -25,9 +25,9 @@ try:
     connection=pymysql.connect(
         host=params["DB_HOST"],
         user=params["DB_USER"],
-        password=params["DB_PASSEORD"],
+        password=params["DB_PASSWORD"],
         database=params["DB_NAME"],
-        port=params["DB_PORT"],
+        port=int(params["DB_PORT"]),
         connect_timeout=10
     )
 
