@@ -76,7 +76,7 @@ jobs:
               --region ${{ env.REGION }})
 
             echo "[$i] Status: $STATUS"
-            echo "$STATUS" | grep -q "InProgress\|Pending" && sleep 10  break
+            echo "$STATUS" | grep -q "InProgress\|Pending" && sleep 10  break  && continue
           done
 
           echo "============ DEPLOY RESULTS ============"
