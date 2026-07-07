@@ -38,5 +38,6 @@ jobs:
       - name: Upload Docker-Compose to S3
         run: |
           aws s3 md ${{ env.S3_BUCKET }} --region ${{ env.REGION }} 2>/dev/null || true
-          aws s3 cp docker-compose.yml ${{ env.REGION }}
+          aws s3 cp docker-compose.yml ${{ env.REGION }}/
+          docker-compose.yml --region ${{ env.REGION }}
           echo "Docker compose Uploaded"
