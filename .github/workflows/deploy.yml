@@ -1,11 +1,11 @@
-name : Application Deploying On AWS
+name: Application Deploying On AWS
 
 on:
   workflow_call:
 
 permissions:
   id-token: write
-  contents: read  
+  contents: read
 
 env:
   VERSION: v1
@@ -17,6 +17,7 @@ env:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -33,12 +34,12 @@ jobs:
           aws ecr get-login-password --region ${{ env.REGION }} | \
           docker login --username AWS --password-stdin ${{ env.ECR }}
 
-      - name: Build and push image
+      - name: Build and Push Image
         run: |
           docker build -t ${{ env.IMAGE }}:${{ env.VERSION }} .
           docker push ${{ env.IMAGE }}:${{ env.VERSION }}
 
-      - name: Upload docker-compose to S3
+      - name: Upload docker-compose.yml to S3
         run: |
           aws s3 cp docker-compose.yml ${{ env.S3_BUCKET }}/docker-compose.yml --region ${{ env.REGION }}
 
@@ -49,18 +50,24 @@ jobs:
             --targets "Key=tag:App,Values=flask" \
             --document-name "AWS-RunShellScript" \
             --comment "Deploy ${{ env.VERSION }} by ${{ github.actor }}" \
-            --parameters '{"commands":[
-              "set -e",
-              "aws ecr get-login-password --region ${{ env.REGION }} | docker login --username AWS --password-stdin ${{ env.ECR }}",
-              "mkdir -p /home/ubuntu/app",
-              "aws s3 cp ${{ env.S3_BUCKET }}/docker-compose.yml /home/ubuntu/app/docker-compose.yml",
-              "docker pull ${{ env.IMAGE }}:${{ env.VERSION }}",
-              "docker stop simplebank 2>/dev/null  true",
-              "docker rm simplebank 2>/dev/null  true",
-              "cd /home/ubuntu/app && IMAGE_TAG=${{ env.VERSION }} docker compose up -d",
-              "docker ps --filter name=simplebank --format {{.Status}} | grep -q Up && echo CONTAINER_RUNNING  (echo CONTAINER_FAILED && exit 1)"
-            ]}' \
-            --query 'Command.CommandId' \
+            --parameters '{
+              "commands":[
+                "set -ex",
+                "aws ecr get-login-password --region '${{ env.REGION }}' | docker login --username AWS --password-stdin '${{ env.ECR }}'",
+                "mkdir -p /home/ubuntu/app",
+                "aws s3 cp '${{ env.S3_BUCKET }}/docker-compose.yml' /home/ubuntu/app/docker-compose.yml",
+                "docker pull '${{ env.IMAGE }}:${{ env.VERSION }}'",
+                "docker stop simplebank 2>/dev/null || true",
+                "docker rm simplebank 2>/dev/null || true",
+                "cd /home/ubuntu/app && IMAGE_TAG='${{ env.VERSION }}' docker compose up -d",
+                "docker ps -a",
+                "docker logs simplebank || true",
+                "cd /home/ubuntu/app && docker compose ps",
+                "cd /home/ubuntu/app && docker compose logs --tail=100 || true",
+                "docker ps --filter name=simplebank --format \"{{.Status}}\" | grep -q Up && echo CONTAINER_RUNNING || (echo CONTAINER_FAILED && exit 1)"
+              ]
+            }' \
+            --query "Command.CommandId" \
             --output text \
             --region ${{ env.REGION }})
 
@@ -76,7 +83,13 @@ jobs:
               --region ${{ env.REGION }})
 
             echo "[$i] Status: $STATUS"
-            echo "$STATUS" | grep -q "InProgress\|Pending" && sleep 10  break  && continue
+
+            if echo "$STATUS" | grep -qE "InProgress|Pending"; then
+              sleep 10
+              continue
+            fi
+
+            break
           done
 
           echo "============ DEPLOY RESULTS ============"
@@ -89,9 +102,9 @@ jobs:
             --output text | while IFS=$'\t' read -r instance status output; do
               echo "Instance : $instance"
               echo "Status   : $status"
-              echo "$output" | tail -5
+              echo "$output"
               echo "----------------------------------------"
-            done
+          done
 
           FAILED=$(aws ssm list-command-invocations \
             --command-id "${{ steps.deploy.outputs.cmd_id }}" \
@@ -99,8 +112,9 @@ jobs:
             --output text \
             --region ${{ env.REGION }})
 
-          [ "$FAILED" -gt 0 ] && \
-            echo "::error::Deploy failed on $FAILED instance(s)!" && \
+          if [ "$FAILED" -gt 0 ]; then
+            echo "::error::Deploy failed on $FAILED instance(s)!"
             exit 1
+          fi
 
           echo "✅ Deploy successful — ${{ env.VERSION }}"
