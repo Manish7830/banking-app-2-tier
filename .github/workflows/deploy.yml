@@ -3,7 +3,6 @@ name : Application Deploying On AWS
 on:
   workflow_call:
 
-  
 permissions:
   id-token: write
   contents: read  
@@ -32,18 +31,12 @@ jobs:
       - name: Login to ECR
         run: |
           aws ecr get-login-password --region ${{ env.REGION }} | \
-          docker login --username AWS --password-stdin ${{env.ECR}}
-          echo "Login Successfull to ECR ✅"
+          docker login --username AWS --password-stdin ${{ env.ECR }}
 
-      - name: Build and Push image
+      - name: Build and push image
         run: |
-          docker build \
-          -t ${{env.IMAGE}}:${{env.VERSION}} \
-          -t ${{env.IMAGE}}:latest .
-
-          docker push ${{env.IMAGE}}:${{env.VERSION}}
-          docker push ${{env.IMAGE}}:latest
-          echo "Image Pushed : ${{env.VERSION}} ✅"
+          docker build -t ${{ env.IMAGE }}:${{ env.VERSION }} .
+          docker push ${{ env.IMAGE }}:${{ env.VERSION }}
 
       - name: Upload docker-compose to S3
         run: |
