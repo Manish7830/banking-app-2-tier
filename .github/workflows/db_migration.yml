@@ -32,16 +32,18 @@ jobs:
         id: init
         run: |
           CMD_ID=$(aws ssm send-command \
-            --targets "Key=tag:App,Values=flask" \
-            --document-name "AWS-RunShellScript" \
-            --parameters '{"commands":[  
-              "aws s3 cp s3://875285643684-devops-scripts/init.py /tmp/init.py",
-              "python3 /tmp/init.py || exit 1",
-              "rm /tmp/init.py"
-            ]}' \
-            --query 'Command.CommandId' \
-            --output text \
-            --region us-east-1)
+           --targets "Key=tag:App,Values=flask" \
+          --document-name "AWS-RunShellScript" \
+          --parameters '{"commands":[
+            "aws s3 cp s3://875285643684-devops-scripts/init.py /tmp/init.py",
+            "aws s3 cp s3://875285643684-devops-scripts/init.sql /tmp/init.sql",
+            "python3 /tmp/init.py || exit 1",
+            "rm -f /tmp/init.py /tmp/init.sql"
+          ]}' \
+          --query 'Command.CommandId' \
+          --output text \
+          --region us-east-1)
+
           echo "cmd_id=$CMD_ID" >> $GITHUB_OUTPUT
 
       - name: Show Results
