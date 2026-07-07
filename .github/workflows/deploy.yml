@@ -45,21 +45,20 @@ jobs:
           docker push ${{env.IMAGE}}:latest
           echo "Image Pushed : ${{env.VERSION}} ✅"
 
-      - name: Upload Docker-Compose to S3 
+      - name: Upload docker-compose to S3
         run: |
-          aws s3 mb ${{ env.S3_BUCKET }} --region ${{ env.REGION }} 2>/dev/null || true
           aws s3 cp docker-compose.yml ${{ env.S3_BUCKET }}/docker-compose.yml --region ${{ env.REGION }}
-          echo "Docker compose Uploaded ✅"
 
       - name: Deploy via SSM
+        id: deploy
         run: |
           CMD_ID=$(aws ssm send-command \
-          --target "Key=tag:App,Values=flask" \
-          --document-name "AWS-RunShellScript" \
-          --comment "Deploy ${{ env.VERSION }} by ${{ github.actor }}" \
-          --parameters '{"command":[
-            "set -e"
-            "aws ecr get-login-password --region ${{ env.REGION }} | docker login --username AWS --password-stdin ${{ env.ECR }}",
+            --targets "Key=tag:App,Values=flask" \
+            --document-name "AWS-RunShellScript" \
+            --comment "Deploy ${{ env.VERSION }} by ${{ github.actor }}" \
+            --parameters '{"commands":[
+              "set -e",
+              "aws ecr get-login-password --region ${{ env.REGION }} | docker login --username AWS --password-stdin ${{ env.ECR }}",
               "mkdir -p /home/ubuntu/app",
               "aws s3 cp ${{ env.S3_BUCKET }}/docker-compose.yml /home/ubuntu/app/docker-compose.yml",
               "docker pull ${{ env.IMAGE }}:${{ env.VERSION }}",
